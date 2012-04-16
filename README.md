@@ -21,16 +21,16 @@ I pretty much followed <http://docs.puppetlabs.com/mcollective/reference/basic/g
 
 First we need java, version used :
 
-[root@mc-pdb ~]# java -version
-  java version "1.6.0_22"
-  OpenJDK Runtime Environment (IcedTea6 1.10.6) (amazon-52.1.10.6.44.amzn1-x86_64)
-OpenJDK 64-Bit Server VM (build 20.0-b11, mixed mode)
+    [root@mc-pdb ~]# java -version
+      java version "1.6.0_22"
+      OpenJDK Runtime Environment (IcedTea6 1.10.6) (amazon-52.1.10.6.44.amzn1-x86_64)
+    OpenJDK 64-Bit Server VM (build 20.0-b11, mixed mode)
 
   - Downloaded apache-activemq-5.4.3 and extracted it
   - Chang the conf/activemq.xml with the file in the [getting started guide](http://docs.puppetlabs.com/mcollective/reference/basic/gettingstarted.html)
   - Changed bin/activemq to bind to ipv4
 
-  ACTIVEMQ_OPTS_MEMORY="-Xms256M -Xmx256M  -Djava.net.preferIPv4Stack=true"
+    ACTIVEMQ_OPTS_MEMORY="-Xms256M -Xmx256M  -Djava.net.preferIPv4Stack=true"
 
 
 ## Stomp Gem
@@ -40,63 +40,63 @@ The rubygem-stomp is available in the Extras Packages for Enterprise Linux 6 for
 
   Note: On the Amazon AMI epel is installed but not enabled.
 
-# yum install -y rubygem-stomp
+    # yum install -y rubygem-stomp
 
 ##  Mcollective installation
 
-  Puppetlabs provides a yum repo via http://yum.puppetlabs.com/ with rpms for . I downloaded them manually
+Puppetlabs provides a yum repo via http://yum.puppetlabs.com/ with rpms for . I downloaded them manually
 
-# rpm -ihV mcollective-1.2.1-1.el6.noarch.rpm  mcollective-client-1.2.1-1.el6.noarch.rpm  mcollective-common-1.2.1-1.el6.noarch.rpm
+    # rpm -ihV mcollective-1.2.1-1.el6.noarch.rpm  mcollective-client-1.2.1-1.el6.noarch.rpm  mcollective-common-1.2.1-1.el6.noarch.rpm
 
-  The config files are in /etc/mcollective/client.cfg and /etc/mcollective/server.cfg
+The config files are in /etc/mcollective/client.cfg and /etc/mcollective/server.cfg
 
 To make them match the sample config file. (in both files)
 
-  plugin.stomp.host = localhost
-  plugin.stomp.port = 6163
-  plugin.stomp.user = mcollective
-  plugin.stomp.password = marionette
+    plugin.stomp.host = localhost
+    plugin.stomp.port = 6163
+    plugin.stomp.user = mcollective
+    plugin.stomp.password = marionette
 
   Now you can start mcollective server
 
-# /etc/init.d/mcollective start
+    # /etc/init.d/mcollective start
 
   Test it with
 
-# mc-ping
+    # mc-ping
 
 ## Setting up mc-puppetd
 
-  The puppet-agent information can be found at <http://projects.puppetlabs.com/projects/mcollective-plugins/wiki/AgentPuppetd>
+The puppet-agent information can be found at <http://projects.puppetlabs.com/projects/mcollective-plugins/wiki/AgentPuppetd>
 
-  # git clone git://github.com/puppetlabs/mcollective-plugins.git
+    # git clone git://github.com/puppetlabs/mcollective-plugins.git
 
-  # cp puppetd/... -> /usr/libexec/mcollective/mcollective
+    # cp puppetd/... -> /usr/libexec/mcollective/mcollective
 
-  # agent ->agent puppetd.rb and puppetd.ddl
-  # application -> application directory puppetd
+    # agent ->agent puppetd.rb and puppetd.ddl
+    # application -> application directory puppetd
 
-  #mco puppetd  -v runonce
+    # mco puppetd  -v runonce
 
 # Compiling the Agent
 
 ## Setup the required compiler tools
 
-# yum groupinstall "Development Tools"
+    # yum groupinstall "Development Tools"
 
 ## Required libraries
-  To make it work we require some libraries that are standard not (yet) available as rpm.
-  We install these libraries in /opt as prefix to avoid
+To make it work we require some libraries that are standard not (yet) available as rpm.
+We install these libraries in /opt as prefix to avoid
 
-  - ActiveMQ-cpp : <http://activemq.apache.org/cms/index.html>
-  - APR : <http://apr.apache.org/>
-  - APR-util : <http://apr.apache.org/>
-  - Yaml-cpp : <http://code.google.com/p/yaml-cpp/>
+- ActiveMQ-cpp : <http://activemq.apache.org/cms/index.html>
+- APR : <http://apr.apache.org/>
+- APR-util : <http://apr.apache.org/>
+- Yaml-cpp : <http://code.google.com/p/yaml-cpp/>
 
-  libapr-1 and libapr-util are already available on centos but ActiveMQ-cpp needs more recent versions
+libapr-1 and libapr-util are already available on centos but ActiveMQ-cpp needs more recent versions
 
 ### APR
-  APR : <http://apr.apache.org/>
+APR : <http://apr.apache.org/>
 
     # wget http://apache.cu.be//apr/apr-1.4.6.tar.gz
     # tar -xzvf apr-1.4.6.tar.gz
@@ -105,7 +105,7 @@ To make them match the sample config file. (in both files)
     # make install
 
 ### APR-util
-  APR-util : <http://apr.apache.org/>
+APR-util : <http://apr.apache.org/>
 
     # wget http://apache.cu.be//apr/apr-util-1.4.1.tar.gz
     # tar -xzvf apr-1.4.1.tar.gz
@@ -114,11 +114,11 @@ To make them match the sample config file. (in both files)
     # make install
 
 ### Activemq-cpp
-  ActiveMQ-cpp : <http://activemq.apache.org/cms/index.html>
+ActiveMQ-cpp : <http://activemq.apache.org/cms/index.html>
 
-  This requires apr and apr-util: <http://stackoverflow.com/questions/7957837/activemq-c-client-install-says-apr-is-not-installed-why>
+This requires apr and apr-util: <http://stackoverflow.com/questions/7957837/activemq-c-client-install-says-apr-is-not-installed-why>
 
-  Requires openssl-devel (but doesn't seem to work)
+Requires openssl-devel (but doesn't seem to work)
 
     # yum install openssl-devel
 
@@ -129,13 +129,13 @@ To make them match the sample config file. (in both files)
     # make install
 
 ### Yaml-cpp
-  Yaml-cpp : <http://code.google.com/p/yaml-cpp/>
+Yaml-cpp : <http://code.google.com/p/yaml-cpp/>
 
-  Requires cmake
+Requires cmake
 
-# yum install cmake
+    # yum install cmake
 
-  To have it use /opt as prefix - <http://stackoverflow.com/questions/6003374/what-is-cmake-equivalent-of-configure-prefix-dir-make-all-install>
+To have it use /opt as prefix - <http://stackoverflow.com/questions/6003374/what-is-cmake-equivalent-of-configure-prefix-dir-make-all-install>
 
     # wget http://yaml-cpp.googlecode.com/files/yaml-cpp-0.3.0.tar.gz
     # cd yaml-cpp-0.3.0
