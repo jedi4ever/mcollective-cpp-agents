@@ -1,0 +1,21 @@
+--- 
+:filter: 
+  identity: []
+
+  fact: []
+
+  agent: []
+
+  cf_class: []
+
+:body: |
+  --- ping
+
+:agent: discovery
+:senderid: mc-pdb
+:callerid: uid=0
+:hash: 18bd423a22603162e9ee7249420eee98
+:msgtarget: /topic/mcollective.discovery.command
+:collective: mcollective
+:requestid: a2adb5c0e271b4bb2b440ef6fb93a2f8
+:msgtime: 1334513140
