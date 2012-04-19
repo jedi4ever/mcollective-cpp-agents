@@ -84,6 +84,22 @@ The puppet-agent information can be found at <http://projects.puppetlabs.com/pro
 
     # yum groupinstall "Development Tools"
 
+
+## LibAQMP approach
+See readme on libamqp
+
+Note: the libamqp-cpp takes about 54 Meg to initalize :(
+
+## Libstomp approach
+Instead of using a generic amqp-cpp library and then implementing stomp on top.
+Libyaml provides a stomp only interface, making it much more lighter
+
+Sample code can be found at:
+<http://svn.stomp.codehaus.org/browse/stomp/trunk/c/src/main.c?r=31>
+
+To build it I found 
+<http://bivald.com/lessons-learned/2009/11/building_libstomp_client_on_li.html>
+
 ## Required libraries
 To make it work we require some libraries that are standard not (yet) available as rpm.
 We install these libraries in /opt as prefix to avoid
@@ -95,38 +111,13 @@ We install these libraries in /opt as prefix to avoid
 
 libapr-1 and libapr-util are already available on centos but ActiveMQ-cpp needs more recent versions
 
+<http://dev.ariel-networks.com/apr/apr-tutorial/html/apr-tutorial-13.html>
+Good for debugging - <https://github.com/morellon/stomp/blob/master/bin/stompcat>
+
+
 ### APR
-APR : <http://apr.apache.org/>
 
-    # wget http://apache.cu.be//apr/apr-1.4.6.tar.gz
-    # tar -xzvf apr-1.4.6.tar.gz
-    # cd apr-1.4.6
-    # ./configure --prefix=/opt
-    # make install
-
-### APR-util
-APR-util : <http://apr.apache.org/>
-
-    # wget http://apache.cu.be//apr/apr-util-1.4.1.tar.gz
-    # tar -xzvf apr-1.4.1.tar.gz
-    # cd apr-1.4.1
-    # ./configure --prefix=/opt --with-apr=/opt
-    # make install
-
-### Activemq-cpp
-ActiveMQ-cpp : <http://activemq.apache.org/cms/index.html>
-
-This requires apr and apr-util: <http://stackoverflow.com/questions/7957837/activemq-c-client-install-says-apr-is-not-installed-why>
-
-Requires openssl-devel (but doesn't seem to work)
-
-    # yum install openssl-devel
-
-    # wget http://apache.megamobile.be/activemq/activemq-cpp/source/activemq-cpp-library-3.4.1-src.tar.gz
-    # tar -xzvf activemq-cpp-library-3.4.1-src.tar.gz
-    # cd activemq-cpp-library-3.4.1
-    # ./configure --prefix=/opt --with-apr=/opt/ --with-apr-util=/opt --disable-ssl
-    # make install
+		yum install libapr-1 libapr1-dev
 
 ### Yaml-cpp
 Yaml-cpp : <http://code.google.com/p/yaml-cpp/>
@@ -174,30 +165,6 @@ I adapted the /usr/libexec/mcollective/mcollective/plugins/agent/security/psk.rb
 
   Changing this requires a restart of the mcollective server
 
-### Getting AQMP stomp to work
-
-Running the example AMQP-cpp code gave an error when running
-
-    No Matching Factory Registered for format := tcp
-
-Turns out you have to activate the library
-
-    activemq::library::ActiveMQCPP::initializeLibrary();
-
-Also it was missing the correct include
-
-    #include <activemq/library/ActiveMQCPP.h>
-
-See <http://marc.info/?l=activemq-users&m=125692094028330>
-
-And the authentication was anonymous, to pass a username and password:
-
-    connectionFactory->createConnection ("mcollective", "marionette");
-
-ALso stdio.h was missing
-
-and it was throwing a looser-throw specifier <http://www.agapow.net/programming/cpp/looser-throw-specifier>
-
 ### What I learned
 - An agent needs to respond to the discovery protocol to be used. Otherwise no requests are send. This might change in the new 1.3 protocol (dixit @ripienaar)
 - The message is transferred as a binary message (even when using yaml)
@@ -224,10 +191,6 @@ Files description:
 
 - client.cfg and server.cfg used
 - psk.rb adapted (mcollective 1.2)
-- Makefile
-- mc-discovery.cpp : to respond to ping and reply with pong
-- mc-puppetd.cpp: to futher do something with the action
-- exec.cpp: sample to execute some shell command
 
 After compiling run it with to make it work with the libs in /opt (I'm working on static compile too)
 
@@ -240,4 +203,8 @@ We don't want the kernel to lie to us, these are good ways to look at the actual
 
     # cat /proc/pid/smaps
     # pmap -d pid
+
+- The normal mcollective ruby needs about 19 Megs to run
+- The libmamp-cpp needs about 54!Megs to run
+- The libstomp version requires about 840K to run
 
