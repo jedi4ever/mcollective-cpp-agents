@@ -1,138 +1,157 @@
-//Constructor passes the session
+#include "discovery.h"
+#include "stomp.h"
+#include "yaml.h"
+#include <openssl/md5.h>
 
-// // Create the destination (Topic or Queue)
-//  destination = session->createTopic ("mcollective.discovery.command");
+#include<fstream>
+#include<sstream>
+#include<iostream>
+#include<string>
 
+using namespace std;
 
-//  // Create a MessageConsumer from the Session to the Topic or Queue
-//  consumer = session->createConsumer (destination);
+namespace Mcollective
+{
 
-// Set listener (a class that has onMessage(const Message * message) throw()
-// consumer->setMessageListener (this);
-//
-//
-//
+  DiscoveryAgent::DiscoveryAgent (stomp_connection * connection,
+				  apr_pool_t * pool)
+  {
+     _pool =  pool;
+     _connection = connection;
+  };
 
+  void DiscoveryAgent::handle (stomp_frame * frame)
+  {
+    fprintf (stdout, "Response: %s, %s\n", frame->command, frame->body);
+    std::string msg (frame->body);
+    if (strlen (frame->body) == 0)
+      {
+	cout << "No body in packet";
+	return;
+      }
 
-// Called from the consumer since this class is a registered MessageListener
-//  virtual void
-//     onMessage (const Message * message)
-//        throw ()
+    std::stringstream msg_stream (msg);
+    cout << "******\n";
+    cout << msg_stream.str ();
+    cout << "******\n";
 
-// extract message to yaml and pass it to handle
+    //Parse msg stream
+    YAML::Parser msg_parser (msg_stream);
+    YAML::Node msg_doc;
+    msg_parser.GetNextDocument (msg_doc);
 
-   // const BytesMessage *
-   //  bytesMessage = dynamic_cast < const
-   //  BytesMessage * >(message);
-
-// if (bytesMessage != NULL)
-// {
-//   //std::cout << bytesMessage->getBodyBytes();
-//   //bytesMessage->reset();
-//
-//   size_t i = bytesMessage->getBodyLength ();
-//   printf ("%lu", i);
-//   ofstream ofs ("message.yaml", ofstream::out);
-//   for (int x = 1; x <= i; x++)
-//   {
-//     ofs << bytesMessage->readByte ();
-//   }
-//   ofs.flush ();
-//   ofs.close ();
-//
-//   try
-//   {
-//     std::ifstream fin ("message.yaml");
-//     //std::stringstream fin(std::string(bytesMessage->getBodyBytes()));
-//     YAML::Parser parser (fin);
-//     YAML::Node doc;
-//     // We assume only the first doc, need to check with doc.size
-//     parser.GetNextDocument (doc);
+    for (YAML::Iterator it = msg_doc.begin (); it != msg_doc.end (); ++it)
+      {
+	std::string key, value;
+	it.first () >> key;
+	//std::cout << "Key: " << key << std::endl;
+      }
 
 
-/////////////////////// String to YAML
-// std::stringstream bodystream (body);
-// YAML::Parser bodyparser (bodystream);
-// YAML::Node bodydoc;
-// std::string action;
-// bodyparser.GetNextDocument (bodydoc);
-// bodydoc >> action;
-// std::cout << action;
+    std::string requestid;
+    std::string senderid;
+    std::string msgtarget;
+    msg_doc[":msgtarget"] >> msgtarget;
+    msg_doc[":requestid"] >> requestid;
+    msg_doc[":senderid"] >> senderid;
 
-///////////////  Construct body
-// // Construct YAML body
-// YAML::Emitter reply_message_body_yaml;
-// reply_message_body_yaml << "pong";
+    // Body seems to be multiline string of yaml                                          
+    // Parsing strings http://stackoverflow.com/questions/2813030/yaml-cpp-parsing-strings
+    std::string body;
+    msg_doc[":body"] >> body;
 
-///////////// MD5 sign body
-//  std::string reply_message_body = reply_message_body_yaml.c_str();
-//  std::cout << reply_message_body << std::endl;
-//  // Append PSK to it
-//  std::string psk = "unset";
-//  std::string body_psk = reply_message_body;
-//  body_psk.append(psk);
-//  std::stringstream md5sumstream;
+    std::stringstream body_stream (body);
+    cout << "******\n";
+    cout << body_stream.str ();
+    cout << "******\n";
+    YAML::Parser body_parser (body_stream);
+    YAML::Node body_doc;
+    std::string action;
+    body_parser.GetNextDocument (body_doc);
+    body_doc >> action;
+    std::cout << action;
 
-// // MD5 -  https://gist.github.com/2389719
-// // but needs a real string
-// // http://social.msdn.microsoft.com/Forums/en/Vsexpressvc/thread/e1774395-ba99-4fe6-98eb-2224a67984b9
-// unsigned char md5_result[MD5_DIGEST_LENGTH];
-// const unsigned char * constStr = reinterpret_cast<const unsigned char *> (body_psk.c_str());
-// MD5(constStr, body_psk.length() , md5_result);
-// for (i=0; i < MD5_DIGEST_LENGTH; i++)
-// {
-//   printf("%02x",  md5_result[i]);
-//   char digit[2];
-//   sprintf(digit,"%02x",  md5_result[i]);
-//   md5sumstream << digit;
-// }
-// printf("\\n");
-//
+/////////////  Construct body
+    // Construct YAML body
+    YAML::Emitter reply_message_body_yaml;
+    reply_message_body_yaml << "pong";
 
+/////////// MD5 sign body
+    std::string reply_message_body = reply_message_body_yaml.c_str ();
+    std::cout << reply_message_body << std::endl;
+    // Append PSK to it
+    std::string psk = "unset";
+    std::string body_psk = reply_message_body;
+    body_psk.append (psk);
+    std::stringstream md5sumstream;
+
+    // MD5 -  https://gist.github.com/2389719
+    // but needs a real string
+    // http://social.msdn.microsoft.com/Forums/en/Vsexpressvc/thread/e1774395-ba99-4fe6-98eb-2224a67984b9
+    unsigned char md5_result[MD5_DIGEST_LENGTH];
+    const unsigned char *constStr =
+      reinterpret_cast < const unsigned char *>(body_psk.c_str ());
+    MD5 (constStr, body_psk.length (), md5_result);
+    for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
+      {
+	printf ("%02x", md5_result[i]);
+	char digit[2];
+	sprintf (digit, "%02x", md5_result[i]);
+	md5sumstream << digit;
+      }
+    printf ("\n");
+
+
+    std::cout << "md5 stream:" << md5sumstream.str () << std::endl;
+    std::string hash = md5sumstream.str ();
+    std::cout << "hash:" << hash << std::endl;
 
 // Construct answer
 
-// YAML::Emitter reply_message_yaml;
-//
-// reply_message_yaml << YAML::BeginMap;
-// reply_message_yaml << YAML::Key << ":msgtime";
-// reply_message_yaml << YAML::Value << 1010101;
-// reply_message_yaml << YAML::Key << ":requestid";
-// reply_message_yaml << YAML::Value << requestid;
-// reply_message_yaml << YAML::Key << ":body";
-// reply_message_yaml << YAML::Value << reply_message_body;
-// reply_message_yaml << YAML::Key << ":senderid";
-// reply_message_yaml << YAML::Value << "mcpp";
-// reply_message_yaml << YAML::Key << ":senderagent";
-// reply_message_yaml << YAML::Value << "discovery";
-// reply_message_yaml << YAML::Key << ":msgtarget";
-// reply_message_yaml << YAML::Value << "/topic/mcollective.discovery.reply";
-//
-// reply_message_yaml << YAML::Key << ":hash";
-// reply_message_yaml << YAML::Value << hash;
-// reply_message_yaml << YAML::EndMap;
-//
-//
-// // Put it in a string
-// std::string reply_message = reply_message_yaml.c_str();
-// std::cout << reply_message << std::endl;
+    YAML::Emitter reply_message_yaml;
 
-  //   // Create the destination (Topic or Queue)
-  //   destination = session->createTopic( "mcollective.discovery.reply" );
+    reply_message_yaml << YAML::BeginMap;
+    reply_message_yaml << YAML::Key << ":msgtime";
+    reply_message_yaml << YAML::Value << 1010101;
+    reply_message_yaml << YAML::Key << ":requestid";
+    reply_message_yaml << YAML::Value << requestid;
+    reply_message_yaml << YAML::Key << ":body";
+    reply_message_yaml << YAML::Value << reply_message_body;
+    reply_message_yaml << YAML::Key << ":senderid";
+    reply_message_yaml << YAML::Value << "mcpp";
+    reply_message_yaml << YAML::Key << ":senderagent";
+    reply_message_yaml << YAML::Value << "discovery";
+    reply_message_yaml << YAML::Key << ":msgtarget";
+    reply_message_yaml << YAML::Value << "/topic/mcollective.discovery.reply";
 
-  //   // Create a MessageProducer from the Session to the Topic or Queue
-  //   producer = session->createProducer( destination );
-  //   producer->setDeliveryMode( DeliveryMode::NON_PERSISTENT );
+    reply_message_yaml << YAML::Key << ":hash";
+    reply_message_yaml << YAML::Value << hash;
+    reply_message_yaml << YAML::EndMap;
 
-  //   // Create a messages
-  //   BytesMessage* reply = session->createBytesMessage();
 
-  //   reply->writeString(reply_message.c_str());
-  //   producer->send( reply );
-  //   printf("reply send \\n");
+    // Put it in a string
+    std::string reply_message = reply_message_yaml.c_str ();
+    cout << reply_message;
 
-  //   delete reply;
 
-  // }catch ( CMSException& e ) {
-  //   e.printStackTrace();
-  // }
+    ///Send it
+
+    stomp_frame reply_frame;
+    reply_frame.command = "SEND";
+    reply_frame.headers = apr_hash_make (_pool);
+    apr_hash_set (reply_frame.headers, "destination", APR_HASH_KEY_STRING,
+		  "/topic/mcollective.discovery.reply");
+
+    reply_frame.body_length = -1;
+char *caution = const_cast<char *>(reply_message.c_str());
+    
+    reply_frame.body = caution;
+    apr_status_t rc;
+    rc = stomp_write (_connection, &reply_frame, _pool);
+    //rc == APR_SUCCESS || die (-2, "Could not send frame", rc);
+
+
+  };
+
+}
+

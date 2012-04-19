@@ -1,6 +1,10 @@
-#include "mcollective_listener.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include "listener.h"
 int main(int argc, char *argv[])
 {
-  McollectiveListener a;
+  Mcollective::Listener a;
   a.DoSomething();
+  sleep(200000);
 }

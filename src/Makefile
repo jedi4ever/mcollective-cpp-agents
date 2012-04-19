@@ -17,11 +17,22 @@ CXX=g++
 #------------------------------------------------------------------------------
 
 main: libmcollective.so main.o
-	$(CXX) -o $(PROGRAM) main.o -L. -lmcollective
+	$(CXX) -Os -o $(PROGRAM) main.o -L. -lmcollective -lapr-1 -lyaml-cpp -lcrypto -lssl
 
-libmcollective.so: mcollective_listener.cpp
-	$(CXX) -fPIC -c mcollective_listener.cpp -o mcollective.o
-	$(CXX) -shared -Wl -o libmcollective.so mcollective.o
+main.o: main.cpp
+	$(CXX) -Os -c main.cpp -lmcollective -lstomp
+
+listener.o: listener.cpp
+	$(CXX) -Os -fPIC -c listener.cpp -o listener.o  -I/usr/include/apr-1 -I.
+
+stomp.o: stomp.c
+	gcc -Os -fPIC -c stomp.c -I.  -I/usr/include/apr-1 -lapr-1
+
+agent/discovery.o: agent/discovery.cpp
+	$(CXX) -Os -fPIC -c agent/discovery.cpp -o agent/discovery.o  -I/usr/include/apr-1 -I. -I/opt/include/yaml-cpp
+
+libmcollective.so: listener.o agent/discovery.o stomp.o
+	$(CXX) -Os -shared -Wl -o libmcollective.so listener.o agent/discovery.o stomp.o
 
 clean:
 	rm *.o *.so $(PROGRAM)
