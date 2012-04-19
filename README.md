@@ -158,6 +158,8 @@ To have it use /opt as prefix - <http://stackoverflow.com/questions/6003374/what
   - Emit yaml - <http://code.google.com/p/yaml-cpp/wiki/HowToEmitYAML>
   - Parse yaml - <http://code.google.com/p/yaml-cpp/wiki/HowToParseADocument>
 
+  - Generic c++/shared libs - <http://stackoverflow.com/questions/496664/c-dynamic-shared-library-on-linux/497158#497158>
+
 ### Yaml serializer
   By default the PSK security uses Ruby Marshaling to transfer information over stomp.
   The ssl security provider of mcollective allows for yaml by setting plugin.ssl_serialize = yaml
@@ -238,3 +240,4 @@ We don't want the kernel to lie to us, these are good ways to look at the actual
 
     # cat /proc/pid/smaps
     # pmap -d pid
+
