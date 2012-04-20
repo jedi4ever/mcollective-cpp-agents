@@ -23,7 +23,7 @@ main.o: main.cpp
 	$(CXX) -Os -c main.cpp -lmcollective -lstomp
 
 listener.o: listener.cpp
-	$(CXX) -Os -fPIC -c listener.cpp -o listener.o  -I/usr/include/apr-1 -I.
+	$(CXX) -Os -fPIC -c listener.cpp -o listener.o  -I/usr/include/apr-1 -I.  -I/opt/include/yaml-cpp 
 
 stomp.o: stomp.c
 	gcc -Os -fPIC -c stomp.c -I.  -I/usr/include/apr-1 -lapr-1

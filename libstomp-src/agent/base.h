@@ -1,3 +1,5 @@
+#include <yaml.h>
+
 namespace Mcollective                                     
 {                                                         
 	class BaseAgent {               
@@ -9,5 +11,8 @@ namespace Mcollective
 
 		virtual void handle (stomp_frame *);                  
 		public: virtual void start();                                 
+
+	     void receive(YAML::Node *msg_doc, YAML::Node *body_doc);                             
+	     void reply(std::string request_id, YAML::Emitter *reply_message_yaml);               
 	};                                                      
 }                                                         
