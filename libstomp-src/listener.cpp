@@ -1,6 +1,7 @@
 #include "agent/discovery.h"
 #include "listener.h"
 #include "stomp.h"
+#include <pthread.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,84 +10,58 @@
 
 using namespace std;
 
-int
+				int
 die (int exitCode, const char *message, apr_status_t reason)
 {
-  char msgbuf[80];
-  apr_strerror (reason, msgbuf, sizeof (msgbuf));
-  fprintf (stderr, "%s: %s (%d)\n", message, msgbuf, reason);
-  exit (exitCode);
-  return reason;
+				char msgbuf[80];
+				apr_strerror (reason, msgbuf, sizeof (msgbuf));
+				fprintf (stderr, "%s: %s (%d)\n", message, msgbuf, reason);
+				exit (exitCode);
+				return reason;
 }
 
 namespace Mcollective
 {
-  Listener::Listener ()
-  {
-  }
 
+				struct thread_data{
+								apr_pool_t *pool;                 
+								stomp_connection *connection;
+								int  thread_id;
+				};
 
-  void Listener::DoSomething ()
-  {
+				void *DiscoveryThread(void *threadarg) {
+								struct thread_data *my_data;
+								my_data = (struct thread_data *) threadarg;
+								DiscoveryAgent agent(my_data->connection,my_data->pool);
+								printf("starting");
+								agent.start();
+				}
 
-    apr_status_t rc;
-    apr_pool_t *pool;
-    stomp_connection *connection;
+				Listener::Listener ()
+				{
+				}
 
-    setbuf (stdout, NULL);
+				void Listener::DoSomething ()
+				{
+								apr_status_t rc;
+								rc = apr_initialize ();
+								rc == APR_SUCCESS || die (-2, "Could not initialize", rc);
+								atexit (terminate);
 
-    rc = apr_initialize ();
-    rc == APR_SUCCESS || die (-2, "Could not initialize", rc);
-    atexit (terminate);
+								pthread_t threads[2];
+								size_t stacksize;
+								pthread_attr_t attr;
+								pthread_attr_init(&attr);
 
-    rc = apr_pool_create (&pool, NULL);
-    rc == APR_SUCCESS || die (-2, "Could not allocate pool", rc);
+								//https://computing.llnl.gov/tutorials/pthreads/
+								struct thread_data thread_data_array[2];
 
-    fprintf (stdout, "Connecting......");
-    rc = stomp_connect (&connection, "127.0.0.1", 6163, pool);
-    rc == APR_SUCCESS || die (-2, "Could not connect", rc);
-    fprintf (stdout, "OK\n");
+								thread_data_array[0].thread_id = 0;	
+								rc = pthread_create(&threads[0], NULL, DiscoveryThread, (void *) &thread_data_array[0] );
+								thread_data_array[1].thread_id = 1;	
+								rc = pthread_create(&threads[1], NULL, DiscoveryThread, (void *) &thread_data_array[1] );
+							
 
-    fprintf (stdout, "Sending connect message.");
-    {
-      stomp_frame frame;
-      frame.command = "CONNECT";
-      frame.headers = apr_hash_make (pool);
-      apr_hash_set (frame.headers, "login", APR_HASH_KEY_STRING,
-		    "mcollective");
-      apr_hash_set (frame.headers, "passcode", APR_HASH_KEY_STRING,
-		    "marionette");
-      frame.body = NULL;
-      frame.body_length = -1;
-      rc = stomp_write (connection, &frame, pool);
-      rc == APR_SUCCESS || die (-2, "Could not send frame", rc);
-    }
+				}
 
-  fprintf(stdout, "Sending Subscribe.");                                                                           
-  {                                                                                                                
-     stomp_frame frame;                                                                                            
-     frame.command = "SUB";                                                                                        
-     frame.headers = apr_hash_make(pool);                                                                          
-     apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, "/topic/mcollective.discovery.command");      
-         frame.body_length = -1;                                                                                   
-     frame.body = NULL;                                                                                            
-     rc = stomp_write(connection, &frame, pool);                                                                   
-     rc==APR_SUCCESS || die(-2, "Could not send frame", rc);                                                       
-  }                                                                                                                
-  fprintf(stdout, "OK\n");                                                                                         
-
-    DiscoveryAgent discoveryAgent(connection,pool);
-    while (1)
-      {
-	fprintf (stdout, "Reading Response.");
-	{
-	  stomp_frame *frame;
-	  rc = stomp_read (connection, &frame, pool);
-	  rc == APR_SUCCESS || die (-2, "Could not read frame", rc);
-	    fprintf (stdout, "OK\n");
-	    discoveryAgent.handle(frame);
-	}
-      }
-
-  }
 }

@@ -8,8 +8,10 @@ namespace Mcollective
     apr_pool_t *_pool;
 
   public:
-      DiscoveryAgent (stomp_connection *, apr_pool_t *);
+    DiscoveryAgent (stomp_connection *, apr_pool_t *);
 
     virtual void handle (stomp_frame *);
+    virtual void start();
   };
 }
+
