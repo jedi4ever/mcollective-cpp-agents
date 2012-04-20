@@ -34,8 +34,11 @@ agent/base.o: agent/base.cpp
 agent/discovery.o: agent/discovery.cpp
 	$(CXX) -Os -fPIC -c agent/discovery.cpp -o agent/discovery.o  -I/usr/include/apr-1 -I. -I/opt/include/yaml-cpp
 
-libmcollective.so: listener.o agent/base.o agent/discovery.o stomp.o
-	$(CXX) -Os -shared -Wl -o libmcollective.so agent/base.o listener.o agent/discovery.o stomp.o 
+agent/puppetd.o: agent/puppetd.cpp
+	$(CXX) -Os -fPIC -c agent/puppetd.cpp -o agent/puppetd.o  -I/usr/include/apr-1 -I. -I/opt/include/yaml-cpp
+
+libmcollective.so: listener.o agent/base.o agent/discovery.o agent/puppetd.o stomp.o
+	$(CXX) -Os -shared -Wl -o libmcollective.so agent/base.o listener.o agent/discovery.o stomp.o agent/puppetd.o
 
 clean:
 	rm *.o agent/*.o *.so $(PROGRAM)

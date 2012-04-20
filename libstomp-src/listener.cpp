@@ -1,4 +1,5 @@
 #include "agent/discovery.h"
+#include "agent/puppetd.h"
 #include "listener.h"
 #include "stomp.h"
 #include <pthread.h>
@@ -32,10 +33,21 @@ namespace Mcollective
 				void *DiscoveryThread(void *threadarg) {
 								struct thread_data *my_data;
 								my_data = (struct thread_data *) threadarg;
-								DiscoveryAgent agent(my_data->connection,my_data->pool);
+								DiscoveryAgent agent;
+								agent.init(my_data->connection,my_data->pool);
 								printf("starting");
 								agent.start();
 				}
+
+				void *PuppetdThread(void *threadarg) {
+								struct thread_data *my_data;
+								my_data = (struct thread_data *) threadarg;
+								PuppetdAgent agent;
+								agent.init(my_data->connection,my_data->pool);
+								printf("starting");
+								agent.start();
+				}
+
 
 				Listener::Listener ()
 				{
@@ -59,7 +71,7 @@ namespace Mcollective
 								thread_data_array[0].thread_id = 0;	
 								rc = pthread_create(&threads[0], NULL, DiscoveryThread, (void *) &thread_data_array[0] );
 								thread_data_array[1].thread_id = 1;	
-								rc = pthread_create(&threads[1], NULL, DiscoveryThread, (void *) &thread_data_array[1] );
+								rc = pthread_create(&threads[1], NULL, PuppetdThread, (void *) &thread_data_array[1] );
 							
 
 				}

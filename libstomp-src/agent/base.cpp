@@ -29,7 +29,16 @@ namespace Mcollective
 			return reason;                                                    
 		}                                                                         
 
-	BaseAgent::BaseAgent (stomp_connection * connection,
+
+  string BaseAgent::agentName() {     
+          //std::string name = "base";  
+          //return name;                   
+  };                                     
+
+	BaseAgent::BaseAgent () {
+	}
+
+	void BaseAgent::init (stomp_connection * connection,
 			apr_pool_t * pool)
 	{
 		//_pool =  pool;
@@ -46,7 +55,7 @@ namespace Mcollective
 		rc == APR_SUCCESS || die (-2, "Could not connect", rc);          
 		fprintf (stdout, "OK\n");                                        
 
-
+		name=agentName();
 
 		fprintf (stdout, "Sending connect message.");                                                          
 		{                                                                                                      
@@ -73,8 +82,9 @@ namespace Mcollective
 			frame.command = command;                                                                         
 
 			frame.headers = apr_hash_make(_pool);                                                           
-
-			apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, "/topic/mcollective.discovery.command");                                                                                                              
+			std::string topic= "/topic/mcollective."+name+".command";
+			std::cout << topic ;
+			apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, topic.c_str());
 			frame.body_length = -1;                                                                        
 
 			frame.body = NULL;                                                                             
@@ -89,9 +99,10 @@ namespace Mcollective
 
 
 	void BaseAgent::reply(string requestid,YAML::Emitter *reply_message_body_yaml) {
+		std::cout << "requestid to reply with" << requestid;
 		/////////// MD5 sign body
-		std::string reply_message_body = reply_message_body_yaml->c_str ();
-		std::cout << reply_message_body << std::endl;
+		std::string reply_message_body = (*reply_message_body_yaml).c_str ();
+		std::cout << "@@" << reply_message_body << "@@" << std::endl;
 		// Append PSK to it
 		std::string psk = "unset";
 		std::string body_psk = reply_message_body;
@@ -119,6 +130,8 @@ namespace Mcollective
 		std::string hash = md5sumstream.str ();
 		std::cout << "hash:" << hash << std::endl;
 
+		std::string topic= "/topic/mcollective."+name+".reply";
+
 		// Construct answer
 
 		YAML::Emitter reply_message_yaml;
@@ -129,13 +142,15 @@ namespace Mcollective
 		reply_message_yaml << YAML::Key << ":requestid";
 		reply_message_yaml << YAML::Value << requestid;
 		reply_message_yaml << YAML::Key << ":body";
-		reply_message_yaml << YAML::Value << reply_message_body;
+		reply_message_yaml << YAML::Value << reply_message_body.c_str();
 		reply_message_yaml << YAML::Key << ":senderid";
 		reply_message_yaml << YAML::Value << "mcpp";
 		reply_message_yaml << YAML::Key << ":senderagent";
-		reply_message_yaml << YAML::Value << "discovery";
+		//reply_message_yaml << YAML::Value << "discovery";
+		reply_message_yaml << YAML::Value << name;
 		reply_message_yaml << YAML::Key << ":msgtarget";
-		reply_message_yaml << YAML::Value << "/topic/mcollective.discovery.reply";
+		reply_message_yaml << YAML::Value << topic;
+
 
 		reply_message_yaml << YAML::Key << ":hash";
 		reply_message_yaml << YAML::Value << hash;
@@ -153,7 +168,7 @@ namespace Mcollective
 		reply_frame.command = command;
 		reply_frame.headers = apr_hash_make (_pool);
 		apr_hash_set (reply_frame.headers, "destination", APR_HASH_KEY_STRING,
-				"/topic/mcollective.discovery.reply");
+				topic.c_str());
 
 		reply_frame.body_length = -1;
 		char *caution = const_cast<char *>(reply_message.c_str());
@@ -193,7 +208,6 @@ namespace Mcollective
 		}
 
 
-
 		// Body seems to be multiline string of yaml                                          
 		// Parsing strings http://stackoverflow.com/questions/2813030/yaml-cpp-parsing-strings
 		std::string body;
@@ -207,16 +221,17 @@ namespace Mcollective
 		YAML::Node body_doc;
 		std::string action;
 		body_parser.GetNextDocument (body_doc);
-		body_doc >> action;
-		std::cout << action;
+		//body_doc >> action;
+		//std::cout << action;
 		receive(&msg_doc,&body_doc);
 
 
 
 	};
 
-	 void BaseAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) {
-	};
+
+        void BaseAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) {   
+        };                                                                      
 
 	void BaseAgent::start() {
 		printf("lalalaal");

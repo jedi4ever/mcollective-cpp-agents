@@ -6,10 +6,10 @@ namespace Mcollective
 {
 	class DiscoveryAgent : public BaseAgent {
 
-		public:
-			DiscoveryAgent (stomp_connection *, apr_pool_t *);
+		public: DiscoveryAgent ();
 
-			void receive(YAML::Node *msg_doc, YAML::Node *body_doc);
+		public: std::string agentName();
+		public: void receive(YAML::Node *msg_doc, YAML::Node *body_doc);
 
 	};
 }
