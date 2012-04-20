@@ -24,64 +24,25 @@ namespace Mcollective
 	{
 	};
 
-	void DiscoveryAgent::handle (stomp_frame * frame)
+	void DiscoveryAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) 
 	{
-		fprintf (stdout, "Response: %s, %s\n", frame->command, frame->body);
-		std::string msg (frame->body);
-		if (strlen (frame->body) == 0)
-		{
-			cout << "No body in packet";
-			return;
-		}
-
-		std::stringstream msg_stream (msg);
-		cout << "******\n";
-		cout << msg_stream.str ();
-		cout << "******\n";
-
-		//Parse msg stream
-		YAML::Parser msg_parser (msg_stream);
-		YAML::Node msg_doc;
-		msg_parser.GetNextDocument (msg_doc);
-
-		for (YAML::Iterator it = msg_doc.begin (); it != msg_doc.end (); ++it)
-		{
-			std::string key, value;
-			it.first () >> key;
-			//std::cout << "Key: " << key << std::endl;
-		}
-
-
 		std::string requestid;
 		std::string senderid;
 		std::string msgtarget;
-		msg_doc[":msgtarget"] >> msgtarget;
-		msg_doc[":requestid"] >> requestid;
-		msg_doc[":senderid"] >> senderid;
-
-		// Body seems to be multiline string of yaml                                          
-		// Parsing strings http://stackoverflow.com/questions/2813030/yaml-cpp-parsing-strings
-		std::string body;
-		msg_doc[":body"] >> body;
-
-		std::stringstream body_stream (body);
-		cout << "******\n";
-		cout << body_stream.str ();
-		cout << "******\n";
-		YAML::Parser body_parser (body_stream);
-		YAML::Node body_doc;
-		std::string action;
-		body_parser.GetNextDocument (body_doc);
-		body_doc >> action;
-		std::cout << action;
-
+		(*msg_doc)[":msgtarget"] >> msgtarget;
+		(*msg_doc)[":requestid"] >> requestid;
+		(*msg_doc)[":senderid"] >> senderid;
+		
 		/////////////  Construct body
 		// Construct YAML body
 		YAML::Emitter reply_message_body_yaml;
 		reply_message_body_yaml << "pong";
+		reply(requestid,&reply_message_body_yaml);
+	};
 
+	void DiscoveryAgent::reply(string requestid,YAML::Emitter *reply_message_body_yaml) {
 		/////////// MD5 sign body
-		std::string reply_message_body = reply_message_body_yaml.c_str ();
+		std::string reply_message_body = reply_message_body_yaml->c_str ();
 		std::cout << reply_message_body << std::endl;
 		// Append PSK to it
 		std::string psk = "unset";
@@ -137,7 +98,6 @@ namespace Mcollective
 		std::string reply_message = reply_message_yaml.c_str ();
 		cout << reply_message;
 
-
 		///Send it
 
 		stomp_frame reply_frame;
@@ -154,6 +114,55 @@ namespace Mcollective
 		apr_status_t rc;
 		rc = stomp_write (_connection, &reply_frame, _pool);
 		//rc == APR_SUCCESS || die (-2, "Could not send frame", rc);
+
+	};
+
+	void DiscoveryAgent::handle (stomp_frame * frame)
+	{
+		fprintf (stdout, "Response: %s, %s\n", frame->command, frame->body);
+		std::string msg (frame->body);
+		if (strlen (frame->body) == 0)
+		{
+			cout << "No body in packet";
+			return;
+		}
+
+		std::stringstream msg_stream (msg);
+		cout << "******\n";
+		cout << msg_stream.str ();
+		cout << "******\n";
+
+		//Parse msg stream
+		YAML::Parser msg_parser (msg_stream);
+		YAML::Node msg_doc;
+		msg_parser.GetNextDocument (msg_doc);
+
+		for (YAML::Iterator it = msg_doc.begin (); it != msg_doc.end (); ++it)
+		{
+			std::string key, value;
+			it.first () >> key;
+			//std::cout << "Key: " << key << std::endl;
+		}
+
+
+
+		// Body seems to be multiline string of yaml                                          
+		// Parsing strings http://stackoverflow.com/questions/2813030/yaml-cpp-parsing-strings
+		std::string body;
+		msg_doc[":body"] >> body;
+
+		std::stringstream body_stream (body);
+		cout << "******\n";
+		cout << body_stream.str ();
+		cout << "******\n";
+		YAML::Parser body_parser (body_stream);
+		YAML::Node body_doc;
+		std::string action;
+		body_parser.GetNextDocument (body_doc);
+		body_doc >> action;
+		std::cout << action;
+		receive(&msg_doc,&body_doc);
+
 
 
 	};
