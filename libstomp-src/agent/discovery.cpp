@@ -19,86 +19,9 @@ using namespace std;
 namespace Mcollective
 {
 
-        int                                                               
-die (int exitCode, const char *message, apr_status_t reason)              
-{                                                                         
-        char msgbuf[80];                                                  
-        apr_strerror (reason, msgbuf, sizeof (msgbuf));                   
-        fprintf (stderr, "%s: %s (%d)\n", message, msgbuf, reason);       
-        exit (exitCode);                                                  
-        return reason;                                                    
-}                                                                         
-
 	DiscoveryAgent::DiscoveryAgent (stomp_connection * connection,
-			apr_pool_t * pool)
+			apr_pool_t * pool): BaseAgent::BaseAgent(connection,pool)
 	{
-		//_pool =  pool;
-		//_connection = connection;
-		//
-		apr_status_t rc;
-
-
-            rc = apr_pool_create (&_pool, NULL);                              
-            rc == APR_SUCCESS || die (-2, "Could not allocate pool", rc);    
-                                                                             
-            fprintf (stdout, "Connecting......");                            
-            rc = stomp_connect (&_connection, "127.0.0.1", 6163, _pool);       
-            rc == APR_SUCCESS || die (-2, "Could not connect", rc);          
-            fprintf (stdout, "OK\n");                                        
-
-
-
-                fprintf (stdout, "Sending connect message.");                                                          
-                {                                                                                                      
-                        stomp_frame frame;                                                                             
-                        frame.command = "CONNECT";                                                                     
-                        frame.headers = apr_hash_make (_pool);                                                          
-                        apr_hash_set (frame.headers, "login", APR_HASH_KEY_STRING,                                     
-                                        "mcollective");                                                                
-                        apr_hash_set (frame.headers, "passcode", APR_HASH_KEY_STRING,                                  
-                                        "marionette");                                                                 
-                        frame.body = NULL;                                                                             
-                        frame.body_length = -1;                                                                        
-                        rc = stomp_write (_connection, &frame, _pool);                                                   
-                        rc == APR_SUCCESS || die (-2, "Could not send frame", rc);                                     
-                }                                                                                                      
-                                                                                                                       
-                fprintf(stdout, "Sending Subscribe.");                                                                 
-                {                                                                                                      
-                                                                                                                       
-                        stomp_frame frame;                                                                             
-                                                                                                                       
-                        frame.command = "SUB";                                                                         
-                                                                                                                       
-                        frame.headers = apr_hash_make(_pool);                                                           
-                                                                                                                       
-                        apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, "/topic/mcollective.discovery.command");                                                                                                              
-                        frame.body_length = -1;                                                                        
-                                                                                                                       
-                        frame.body = NULL;                                                                             
-                                                                                                                       
-                        rc = stomp_write(_connection, &frame, _pool);                                                    
-                                                                                                                       
-                        rc==APR_SUCCESS || die(-2, "Could not send frame", rc);                                        
-                                                                                                                       
-                }                                                                                                      
-
-	};
-
-
-	void DiscoveryAgent::start() {
-		printf("lalalaal");
-		while (1)                                                             
-		{                                                                   
-			fprintf (stdout, "Reading Response.");                            
-			{                                                                 
-				stomp_frame *frame;                                             
-				int rc = stomp_read (_connection, &frame, _pool);                     
-				rc == APR_SUCCESS || die (-2, "Could not read frame", rc);      
-				fprintf (stdout, "OK\n");                                     
-				this->handle(frame);                                 
-			}                                                                 
-		}                                                                   
 	};
 
 	void DiscoveryAgent::handle (stomp_frame * frame)
@@ -218,7 +141,8 @@ die (int exitCode, const char *message, apr_status_t reason)
 		///Send it
 
 		stomp_frame reply_frame;
-		reply_frame.command = "SEND";
+		char command[] = "SEND";
+		reply_frame.command = command;
 		reply_frame.headers = apr_hash_make (_pool);
 		apr_hash_set (reply_frame.headers, "destination", APR_HASH_KEY_STRING,
 				"/topic/mcollective.discovery.reply");

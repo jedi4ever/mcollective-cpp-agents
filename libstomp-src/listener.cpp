@@ -41,7 +41,7 @@ namespace Mcollective
 				{
 				}
 
-				void Listener::DoSomething ()
+				void Listener::StartThreads ()
 				{
 								apr_status_t rc;
 								rc = apr_initialize ();

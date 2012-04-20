@@ -1,9 +1,13 @@
-class agentbase {
-  int myx;
+namespace Mcollective                                     
+{                                                         
+	class BaseAgent {               
+		public: stomp_connection *_connection;                        
+		public: apr_pool_t *_pool;                                    
 
-  public:
+		public:                                                 
+		BaseAgent (stomp_connection *, apr_pool_t *);    
 
-  agentbase() { myx=0; }
-  void setx(int newx);
-  int  getx();
-};
+		virtual void handle (stomp_frame *);                  
+		public: virtual void start();                                 
+	};                                                      
+}                                                         

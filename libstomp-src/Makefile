@@ -28,11 +28,14 @@ listener.o: listener.cpp
 stomp.o: stomp.c
 	gcc -Os -fPIC -c stomp.c -I.  -I/usr/include/apr-1 -lapr-1
 
+agent/base.o: agent/base.cpp
+	$(CXX) -Os -fPIC -c agent/base.cpp -o agent/base.o  -I/usr/include/apr-1 -I. -I/opt/include/yaml-cpp
+
 agent/discovery.o: agent/discovery.cpp
 	$(CXX) -Os -fPIC -c agent/discovery.cpp -o agent/discovery.o  -I/usr/include/apr-1 -I. -I/opt/include/yaml-cpp
 
-libmcollective.so: listener.o agent/discovery.o stomp.o
-	$(CXX) -Os -shared -Wl -o libmcollective.so listener.o agent/discovery.o stomp.o
+libmcollective.so: listener.o agent/base.o agent/discovery.o stomp.o
+	$(CXX) -Os -shared -Wl -o libmcollective.so agent/base.o listener.o agent/discovery.o stomp.o 
 
 clean:
-	rm *.o *.so $(PROGRAM)
+	rm *.o agent/*.o *.so $(PROGRAM)

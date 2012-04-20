@@ -1,2 +1,2 @@
-ulimit -s 32
+ulimit -s 16
 LD_LIBRARY_PATH=.  ./mcpp

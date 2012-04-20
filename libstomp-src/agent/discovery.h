@@ -1,17 +1,14 @@
 #include "stomp.h"
+#include "base.h"
 
 namespace Mcollective
 {
-  class DiscoveryAgent
-  {
-    stomp_connection *_connection;
-    apr_pool_t *_pool;
+  class DiscoveryAgent : public BaseAgent {
 
   public:
     DiscoveryAgent (stomp_connection *, apr_pool_t *);
 
     virtual void handle (stomp_frame *);
-    virtual void start();
   };
 }
 

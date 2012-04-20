@@ -9,7 +9,7 @@ class Listener
    Listener();
 
     /* use virtual otherwise linker will try to perform static linkage */
-    virtual void DoSomething();
+    virtual void StartThreads();
 
     //virtual void onException(const CMSException);
 
