@@ -1,0 +1,6 @@
+export STOMP_USER=mcollective
+export STOMP_PASSWORD=marionette
+export STOMP_HOST=localhost
+export STOMP_PORT=6163
+stompcat /topic/mcollective.discovery.command
+#stompcat /topic/mcollective.puppetd.reply
