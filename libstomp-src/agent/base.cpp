@@ -30,10 +30,10 @@ namespace Mcollective
 		}                                                                         
 
 
-  string BaseAgent::agentName() {     
-          //std::string name = "base";  
-          //return name;                   
-  };                                     
+	string BaseAgent::agentName() {     
+		//std::string name = "base";  
+		//return name;                   
+	};                                     
 
 	BaseAgent::BaseAgent () {
 	}
@@ -41,23 +41,20 @@ namespace Mcollective
 	void BaseAgent::init (stomp_connection * connection,
 			apr_pool_t * pool)
 	{
-		//_pool =  pool;
-		//_connection = connection;
-		//
 		apr_status_t rc;
 
 
 		rc = apr_pool_create (&_pool, NULL);                              
 		rc == APR_SUCCESS || die (-2, "Could not allocate pool", rc);    
 
-		fprintf (stdout, "Connecting......");                            
+		fprintf (stdout, "Connecting to pool....");                            
 		rc = stomp_connect (&_connection, "127.0.0.1", 6163, _pool);       
-		rc == APR_SUCCESS || die (-2, "Could not connect", rc);          
+		rc == APR_SUCCESS || die (-2, "Could not connect\n", rc);          
 		fprintf (stdout, "OK\n");                                        
 
 		name=agentName();
 
-		fprintf (stdout, "Sending connect message.");                                                          
+		fprintf (stdout, "Logging in ....");                                                          
 		{                                                                                                      
 			stomp_frame frame;                                                                             
 			char command[] = "CONNECT";
@@ -72,8 +69,10 @@ namespace Mcollective
 			rc = stomp_write (_connection, &frame, _pool);                                                   
 			rc == APR_SUCCESS || die (-2, "Could not send frame", rc);                                     
 		}                                                                                                      
+		fprintf (stdout, "OK\n");                                        
 
-		fprintf(stdout, "Sending Subscribe.");                                                                 
+
+		fprintf(stdout, "Sending Subscribe: ");                                                                 
 		{                                                                                                      
 
 			stomp_frame frame;                                                                             
@@ -83,7 +82,7 @@ namespace Mcollective
 
 			frame.headers = apr_hash_make(_pool);                                                           
 			std::string topic= "/topic/mcollective."+name+".command";
-			std::cout << topic ;
+			std::cout << topic << std::endl;
 			apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, topic.c_str());
 			frame.body_length = -1;                                                                        
 
@@ -99,26 +98,39 @@ namespace Mcollective
 
 
 	void BaseAgent::reply(string requestid,YAML::Emitter *reply_message_body_yaml) {
-		std::cout << "requestid to reply with" << requestid;
-		/////////// MD5 sign body
-		std::string reply_message_body = (*reply_message_body_yaml).c_str ();
-		std::cout << "@@" << reply_message_body << "@@" << std::endl;
-		// Append PSK to it
-		std::string psk = "unset";
-		std::string body_psk = reply_message_body;
-		body_psk.append (psk);
-		std::stringstream md5sumstream;
 
+		std::cout << "[Reply-"+name+"-"+requestid+"] Replying to Request-Id" << requestid << std::endl;
+		std::string reply_message_body = (*reply_message_body_yaml).c_str ();
+		std::cout << "[Reply-"+name+"-"+requestid+"] Body:\n" ;
+		cout << "******\n";
+		cout << reply_message_body << std::endl;
+		cout << "******\n";
+
+		// Make the body a valid YAML Doc
+		std::string yaml_message_body = "--- ";
+		yaml_message_body=yaml_message_body+reply_message_body.c_str() +"\n";
+		std::cout << "[Reply-"+name+"-"+requestid+"] Body YAML:\n";
+		cout << "******\n";
+		cout << yaml_message_body << std::endl;
+		cout << "******\n";
+
+		// Append the PSK to calculate the MD5	
+		std::string body_psk = yaml_message_body;
+		std::string psk = "unset";
+		body_psk.append (psk);
+
+		/////////// MD5 sign body
 		// MD5 -  https://gist.github.com/2389719
 		// but needs a real string
 		// http://social.msdn.microsoft.com/Forums/en/Vsexpressvc/thread/e1774395-ba99-4fe6-98eb-2224a67984b9
+		std::stringstream md5sumstream;
 		unsigned char md5_result[MD5_DIGEST_LENGTH];
 		const unsigned char *constStr =
 			reinterpret_cast < const unsigned char *>(body_psk.c_str ());
 		MD5 (constStr, body_psk.length (), md5_result);
 		for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
 		{
-			printf ("%02x", md5_result[i]);
+			//printf ("%02x", md5_result[i]);
 			char digit[2];
 			sprintf (digit, "%02x", md5_result[i]);
 			md5sumstream << digit;
@@ -126,10 +138,13 @@ namespace Mcollective
 		printf ("\n");
 
 
-		std::cout << "md5 stream:" << md5sumstream.str () << std::endl;
-		std::string hash = md5sumstream.str ();
-		std::cout << "hash:" << hash << std::endl;
+		std::string hash = md5sumstream.str();
+		std::cout << "[Reply-"+name+"-"+requestid+"] Md5 hash:" << hash << std::endl;
 
+		//SSL
+		//hash = "H1OjPrMykjzQKuL+H4G1zqjBbfypFMsUZ4twkSaMKQ/9KE7eOiK15SADsRuW\n/MZvxr5+sIEn5vliHSkTSvegHfrP5pPva2TUPK281+R8UZAi8NX1TrUwOUCy\nY3qxRFWcYkUCtPMKmz6U6A52Ikym5rndKHRfLM9KydjFRPieCaQ=\n";
+
+		// Our reply topic
 		std::string topic= "/topic/mcollective."+name+".reply";
 
 		// Construct answer
@@ -138,28 +153,27 @@ namespace Mcollective
 
 		reply_message_yaml << YAML::BeginMap;
 		reply_message_yaml << YAML::Key << ":msgtime";
-		reply_message_yaml << YAML::Value << 1010101;
+		reply_message_yaml << YAML::Value << 1334988601;
 		reply_message_yaml << YAML::Key << ":requestid";
 		reply_message_yaml << YAML::Value << requestid;
 		reply_message_yaml << YAML::Key << ":body";
-		reply_message_yaml << YAML::Value << reply_message_body.c_str();
+		reply_message_yaml << YAML::Value << YAML::Literal << yaml_message_body;
 		reply_message_yaml << YAML::Key << ":senderid";
 		reply_message_yaml << YAML::Value << "mcpp";
 		reply_message_yaml << YAML::Key << ":senderagent";
-		//reply_message_yaml << YAML::Value << "discovery";
 		reply_message_yaml << YAML::Value << name;
 		reply_message_yaml << YAML::Key << ":msgtarget";
 		reply_message_yaml << YAML::Value << topic;
-
-
 		reply_message_yaml << YAML::Key << ":hash";
-		reply_message_yaml << YAML::Value << hash;
+		reply_message_yaml << YAML::Value << YAML::Literal <<  hash;
 		reply_message_yaml << YAML::EndMap;
-
 
 		// Put it in a string
 		std::string reply_message = reply_message_yaml.c_str ();
-		cout << reply_message;
+		std::cout << "[Reply-"+name+"-"+requestid+"] Reply Message:\n" ;
+		cout << "******\n";
+		std::cout<< reply_message << std::endl;
+		cout << "******\n";
 
 		///Send it
 
@@ -182,15 +196,16 @@ namespace Mcollective
 
 	void BaseAgent::handle (stomp_frame * frame)
 	{
-		fprintf (stdout, "Response: %s, %s\n", frame->command, frame->body);
+		fprintf (stdout, "Received: %s, %s\n", frame->command, frame->body);
 		std::string msg (frame->body);
 		if (strlen (frame->body) == 0)
 		{
-			cout << "No body in packet";
+			cout << "No body in packet" << std::endl;
 			return;
 		}
 
 		std::stringstream msg_stream (msg);
+		std::cout << "[Request-"+name +"] Recieved Packet" << std::endl;
 		cout << "******\n";
 		cout << msg_stream.str ();
 		cout << "******\n";
@@ -214,6 +229,7 @@ namespace Mcollective
 		msg_doc[":body"] >> body;
 
 		std::stringstream body_stream (body);
+		std::cout << "[Request-"+name +"] Recieved Body" << std::endl;
 		cout << "******\n";
 		cout << body_stream.str ();
 		cout << "******\n";
@@ -230,19 +246,17 @@ namespace Mcollective
 	};
 
 
-        void BaseAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) {   
-        };                                                                      
+	void BaseAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) {   
+	};                                                                      
 
 	void BaseAgent::start() {
-		printf("lalalaal");
 		while (1)                                                             
 		{                                                                   
-			fprintf (stdout, "Reading Response.");                            
+			fprintf (stdout, "Listening for messages\n");                            
 			{                                                                 
 				stomp_frame *frame;                                             
 				int rc = stomp_read (_connection, &frame, _pool);                     
 				rc == APR_SUCCESS || die (-2, "Could not read frame", rc);      
-				fprintf (stdout, "OK\n");                                     
 				this->handle(frame);                                 
 			}                                                                 
 		}                                                                   

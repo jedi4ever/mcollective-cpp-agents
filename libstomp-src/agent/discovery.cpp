@@ -30,7 +30,6 @@ namespace Mcollective
 
 	void DiscoveryAgent::receive(YAML::Node *msg_doc, YAML::Node *body_doc) 
 	{
-		printf("yes we are receiving");
 		std::string requestid;
 		std::string senderid;
 		std::string msgtarget;
@@ -38,11 +37,13 @@ namespace Mcollective
 		(*msg_doc)[":requestid"] >> requestid;
 		(*msg_doc)[":senderid"] >> senderid;
 		
-//		std::cout << "We received requesid" << requestid;
 		/////////////  Construct body
 		// Construct YAML body
 		YAML::Emitter reply_message_body_yaml;
+		//PSK
 		reply_message_body_yaml << "pong";
+		//SSL
+		//reply_message_body_yaml << "--- pong";
 		reply(requestid,&reply_message_body_yaml);
 	};
 
