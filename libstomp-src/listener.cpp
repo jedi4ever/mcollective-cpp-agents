@@ -35,7 +35,6 @@ namespace Mcollective
 								my_data = (struct thread_data *) threadarg;
 								DiscoveryAgent agent;
 								agent.init(my_data->connection,my_data->pool);
-								printf("Starting discovery Agent\n");
 								agent.start();
 				}
 
@@ -44,7 +43,6 @@ namespace Mcollective
 								my_data = (struct thread_data *) threadarg;
 								PuppetdAgent agent;
 								agent.init(my_data->connection,my_data->pool);
-								printf("Starting puppet Agent\n");
 								agent.start();
 				}
 

@@ -43,18 +43,18 @@ namespace Mcollective
 	{
 		apr_status_t rc;
 
+		name=agentName();
 
 		rc = apr_pool_create (&_pool, NULL);                              
 		rc == APR_SUCCESS || die (-2, "Could not allocate pool", rc);    
 
-		fprintf (stdout, "Connecting to pool....");                            
+		fprintf (stdout, "[%s] Connecting to pool .... ", name.c_str());                            
 		rc = stomp_connect (&_connection, "127.0.0.1", 6163, _pool);       
 		rc == APR_SUCCESS || die (-2, "Could not connect\n", rc);          
 		fprintf (stdout, "OK\n");                                        
 
-		name=agentName();
 
-		fprintf (stdout, "Logging in ....");                                                          
+		fprintf (stdout, "[%s] Logging in .... ", name.c_str());                            
 		{                                                                                                      
 			stomp_frame frame;                                                                             
 			char command[] = "CONNECT";
@@ -72,7 +72,8 @@ namespace Mcollective
 		fprintf (stdout, "OK\n");                                        
 
 
-		fprintf(stdout, "Sending Subscribe: ");                                                                 
+		std::string topic= "/topic/mcollective."+name+".command";
+		fprintf (stdout, "[%s] Sending Subscribe: ", name.c_str());                            
 		{                                                                                                      
 
 			stomp_frame frame;                                                                             
@@ -81,7 +82,6 @@ namespace Mcollective
 			frame.command = command;                                                                         
 
 			frame.headers = apr_hash_make(_pool);                                                           
-			std::string topic= "/topic/mcollective."+name+".command";
 			std::cout << topic << std::endl;
 			apr_hash_set(frame.headers, "destination", APR_HASH_KEY_STRING, topic.c_str());
 			frame.body_length = -1;                                                                        
@@ -146,6 +146,7 @@ namespace Mcollective
 
 		// Our reply topic
 		std::string topic= "/topic/mcollective."+name+".reply";
+		std::cout << "[Reply-"+name+"-"+requestid+"] Topic:" << topic << std::endl;
 
 		// Construct answer
 
@@ -196,11 +197,11 @@ namespace Mcollective
 
 	void BaseAgent::handle (stomp_frame * frame)
 	{
-		fprintf (stdout, "Received: %s, %s\n", frame->command, frame->body);
+		fprintf (stdout, "[%s] Received message type: %s\n", name.c_str(),frame->command);
 		std::string msg (frame->body);
 		if (strlen (frame->body) == 0)
 		{
-			cout << "No body in packet" << std::endl;
+			cout << "["+name+"] Empty body in packet" << std::endl;
 			return;
 		}
 
@@ -250,9 +251,10 @@ namespace Mcollective
 	};                                                                      
 
 	void BaseAgent::start() {
+		fprintf (stdout, "[%s] Starting listener\n", name.c_str());                            
 		while (1)                                                             
 		{                                                                   
-			fprintf (stdout, "Listening for messages\n");                            
+			fprintf (stdout, "[%s] Listening for messages\n", name.c_str());                            
 			{                                                                 
 				stomp_frame *frame;                                             
 				int rc = stomp_read (_connection, &frame, _pool);                     
